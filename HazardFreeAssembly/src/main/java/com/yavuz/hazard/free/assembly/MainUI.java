@@ -22,11 +22,13 @@ public class MainUI extends javax.swing.JFrame {
 
     private String inputString;
     private ArrayList<String> mAssemblyLines = new ArrayList();
-    private ArrayList<Node> mNodeList = new ArrayList();
+    private static ArrayList<Node> mNodeList = new ArrayList();
 
-    private ArrayList<Dependency> mDependencylist = new ArrayList<>();
+    private static ArrayList<Dependency> mDependencylist = new ArrayList<>();
 
     private String outputString;
+
+    private int tryout = 0;
 
     /**
      * Creates new form MainUI
@@ -269,9 +271,9 @@ public class MainUI extends javax.swing.JFrame {
             }
 
             // print nodelist
-            for (Node n : mNodeList) {
+            /* for (Node n : mNodeList) {
                 System.out.println(n.toString());
-            }
+            }*/
         }
 
     }//GEN-LAST:event_ParseInputActionPerformed
@@ -289,22 +291,24 @@ public class MainUI extends javax.swing.JFrame {
     private void runBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_runBtnActionPerformed
         // TODO add your handling code here:
 
-        int count = findDependencies();
-        System.out.println("Dependency SIZE: " + mDependencylist.size() + "\nFIX: " + count);
+        //int count = findDependencies();
+        // System.out.println("Dependency SIZE: " + mDependencylist.size() + "\nFIX: " + count);
     }//GEN-LAST:event_runBtnActionPerformed
 
     private void solveBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_solveBtnActionPerformed
         // TODO add your handling code here:
 
-       /* while (findDependencies() > 0) {
+        while (findDependencies() > 0) {
             solveDependencies();
-            
+        }
+        for (Node n : mNodeList) {
+            System.out.println(n.getInstruction().getName());
+        }
+
+        /*for (int i = 0; i < 4; i++) {
+            findDependencies();
+            solveDependencies();
         }*/
-       
-       for(int i=0; i<3;i++) {
-           findDependencies();
-           solveDependencies();
-       }
     }//GEN-LAST:event_solveBtnActionPerformed
 
     /**
@@ -355,7 +359,9 @@ public class MainUI extends javax.swing.JFrame {
 
     public void solveDependencies() {
 
-        System.out.println("SOLVING DEPENDENCIES");
+        System.out.println("SOLVING DEPENDENCIES " + tryout);
+        tryout++;
+
         if (mDependencylist.size() > 0) {
 
             System.out.println("SOLVING DEPENDENCIES SIZE: " + mDependencylist.size());
@@ -367,7 +373,7 @@ public class MainUI extends javax.swing.JFrame {
             for (Dependency dep : mDependencylist) {
 
                 if (dep.getHazard().equals(CH)) {
-                    System.out.println("CONTROL HAZARD DETECTED!!!!");
+                    System.out.println("CONTROL HAZARD DETECTED!!!!" + dep.getFirst().getIndex() + " -> " + dep.getSecond().getIndex());
                     control_hazard = true;
                 } else if (dep.getHazard().equals(DH)) {
                     if (dep.getDistance() == 1) {
@@ -387,39 +393,124 @@ public class MainUI extends javax.swing.JFrame {
                         target = dep;
                         int fix_index = target.getFirst().getIndex();
 
-                        ArrayList mNewNodeList = new ArrayList<Node>();
+                        ArrayList<Node> mNewNodeList = new ArrayList();
 
-                        for (int i = 0; i < fix_index; i++) {
-                            mNewNodeList.add(mNodeList.get(i));
+                        for (int i = 0; i <= fix_index; i++) {
+                            Node temp = mNodeList.get(i);
+                            temp.setIndex(i);
+                            mNewNodeList.add(temp);
                         }
 
-                        mNewNodeList.add(new Node(null, new Instruction(InstructionType.NOP, "", "", ""), fix_index+1));
+                        mNewNodeList.add(new Node(null, new Instruction(InstructionType.NOP, "", "", ""), fix_index + 1));
                         mNewNodeList.add(new Node(null, new Instruction(InstructionType.NOP, "", "", ""), fix_index + 2));
                         mNewNodeList.add(new Node(null, new Instruction(InstructionType.NOP, "", "", ""), fix_index + 3));
 
-                        for (int i = fix_index; i < mNodeList.size(); i++) {
-                            System.out.println("ADDING NEW LIST ["+i+"] : " + mNodeList.get(i).getInstruction().getName());
-                            mNewNodeList.add(mNodeList.get(i));
+                        for (int i = fix_index + 1; i < mNodeList.size(); i++) {
+                            // System.out.println("ADDING NEW LIST [" + i + "] : " + mNodeList.get(i).getInstruction().getName());
+                            Node temp = mNodeList.get(i);
+                            temp.setIndex(i + 3);
+                            mNewNodeList.add(temp);
+                        }
+
+                        for (Node n : mNewNodeList) {
+                            System.out.println(n.getInstruction().getName());
+                            System.out.println(n.getIndex());
                         }
 
                         mNodeList = mNewNodeList;
 
                         for (Node n : mNodeList) {
-                            System.out.println(n.toString());
+                            //System.out.println(n.toString());
                         }
                         System.out.println(mNodeList.size());
                         // findDependencies();
+                        mDependencylist.clear();
                         return;
                     }
                 }
 
-                return;
             } else if (data_hazard_1) {
-                return;
-            } else {
-                return;
+
+                // fix data hazard 1
+                Dependency target;
+                for (Dependency dep : mDependencylist) {
+                    if (dep.getHazard().equals(DH) && dep.getDistance() == 1) {
+                        target = dep;
+                        int fix_index = target.getFirst().getIndex();
+                        System.out.println("FIXING DATA HAZARD_1!!!!" + fix_index + " -> " + (fix_index + 1));
+
+                        ArrayList<Node> mNewNodeList = new ArrayList();
+
+                        for (int i = 0; i <= fix_index; i++) {
+                            Node temp = mNodeList.get(i);
+                            temp.setIndex(i);
+                            mNewNodeList.add(temp);
+                        }
+
+                        mNewNodeList.add(new Node(null, new Instruction(InstructionType.NOP, "", "", ""), fix_index + 1));
+                        mNewNodeList.add(new Node(null, new Instruction(InstructionType.NOP, "", "", ""), fix_index + 2));
+
+                        for (int i = fix_index + 1; i < mNodeList.size(); i++) {
+                            // System.out.println("ADDING NEW LIST [" + i + "] : " + mNodeList.get(i).getInstruction().getName());
+                            Node temp = mNodeList.get(i);
+                            temp.setIndex(i + 2);
+                            mNewNodeList.add(temp);
+                        }
+
+                        for (Node n : mNewNodeList) {
+                            System.out.println(n.getInstruction().getName());
+                            System.out.println(n.getIndex());
+                        }
+                        mNodeList = mNewNodeList;
+
+                        System.out.println(mNodeList.size());
+                        // findDependencies();
+                        mDependencylist.clear();
+                        return;
+                    }
+                }
+
+            } else if (data_hazard_2) {
+
+                // fix data hazard 2
+                Dependency target;
+                for (Dependency dep : mDependencylist) {
+                    if (dep.getHazard().equals(DH) && dep.getDistance() == 2) {
+                        target = dep;
+                        int fix_index = target.getFirst().getIndex();
+                        System.out.println("FIXING DATA HAZARD_2!!!!" + fix_index + " -> " + (fix_index + 1));
+                        ArrayList<Node> mNewNodeList = new ArrayList();
+
+                        for (int i = 0; i <= fix_index; i++) {
+                            Node temp = mNodeList.get(i);
+                            temp.setIndex(i);
+                            mNewNodeList.add(temp);
+                        }
+
+                        mNewNodeList.add(new Node(null, new Instruction(InstructionType.NOP, "", "", ""), fix_index + 1));
+
+                        for (int i = fix_index + 1; i < mNodeList.size(); i++) {
+                            // System.out.println("ADDING NEW LIST [" + i + "] : " + mNodeList.get(i).getInstruction().getName());
+                            Node temp = mNodeList.get(i);
+                            temp.setIndex(i + 1);
+                            mNewNodeList.add(temp);
+                        }
+
+                        mNodeList = mNewNodeList;
+
+                        System.out.println(mNodeList.size());
+                        // findDependencies();
+                        mDependencylist.clear();
+                        return;
+                    }
+                }
+
             }
 
+        }
+
+        for (Node n : mNodeList) {
+            System.out.println(n.getInstruction().getName());
         }
     }
 
@@ -439,14 +530,15 @@ public class MainUI extends javax.swing.JFrame {
 
                     if (i < size) {
                         Node target = mNodeList.get(i);
-                        System.out.println("Checking...\n  " + temp + " + " + i);
+                        //System.out.println("Checking...\n  " + current.getInstruction().getName() + "  AND  " +  target.getInstruction().getName());
                         if (target.target(current.current())) {
-                           //System.out.println("DEPENDENCY DETECTED Betweeen  " + current.getIndex() + " + " + target.getIndex());
+                            //
                             // branch or 
                             int distance = target.getIndex() - current.getIndex();
                             if (!current.getInstruction().getType().getSyntax().equals(Branch) && distance < 3) {
                                 Dependency dep = new Dependency(current, target, distance, Hazard.DH);
-                                System.out.println(current.getIndex() + "-> " +target.getIndex() + " ADDING DH: " + distance);
+                                System.out.println(current.getIndex() + "-> " + target.getIndex() + " ADDING DH: " + distance);
+                                System.out.println(current.getInstruction().getName() + "-> " + target.getInstruction().getName() + " ADDING DH: " + distance);
                                 mDependencylist.add(dep);
                             } else {
                                 Dependency dep = new Dependency(current, target, distance, Hazard.NONE);
@@ -456,15 +548,19 @@ public class MainUI extends javax.swing.JFrame {
 
                     }
                 }
-                
-                
-                      //  System.out.println("SSSSSSSSSSss: " + current.getInstruction().getType().getSyntax().name());
-                        if (current.getInstruction().getType().getSyntax().equals(Branch) && !mNodeList.get(current.getIndex()+1).getInstruction().getType().equals(NOP)) {
-                            Dependency dep = new Dependency(current, mNodeList.get(mNodeList.indexOf(current) + 1), 1, Hazard.CH);
-                            System.out.println("ADDING CH !!!!!!!!!");
-                            mDependencylist.add(dep);
-                        }
 
+                //TODO: Check last branch instruction.  //  System.out.println("SSSSSSSSSSss: " + current.getInstruction().getType().getSyntax().name());
+                // System.out.println("ADDING CH !!!!!!!!!" + temp + "name:" + current.getInstruction().getName());
+                if (!(temp == (mNodeList.size() - 1)) && current.getInstruction().getType().getSyntax().name().equals(Branch.name())) {
+                    System.out.println("CURRENT: " + current.getInstruction().getType().getName() + "AFTER: " + mNodeList.get((mNodeList.indexOf(current) + 1)).getInstruction().getType().getName());
+                    if (current.getInstruction().getType().getSyntax().equals(Branch) && !(mNodeList.get((mNodeList.indexOf(current) + 1)).getInstruction().getType().equals(NOP))) {
+                        Dependency dep = new Dependency(current, mNodeList.get(mNodeList.indexOf(current) + 1), 1, Hazard.CH);
+                        System.out.println(current.getIndex() + " -> " + (current.getIndex() + 1) + " ADDING CH !!!!!!!!!");
+                        mDependencylist.add(dep);
+                    }
+                }
+
+                // System.out.println("CURRENTTTTTTTTTTTTTTTT: " + current.getIndex());
                 temp++;
             }
         }
@@ -478,8 +574,6 @@ public class MainUI extends javax.swing.JFrame {
         System.out.println("DEP COUNT: " + depCount);
         return depCount;
     }
-
-
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton ParseInput;
     private javax.swing.JLabel jLabel1;

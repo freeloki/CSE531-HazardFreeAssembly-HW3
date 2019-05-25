@@ -83,5 +83,9 @@ public class Node {
     public int getIndex() {
         return index;
     }
+    
+    public void setIndex(int x) {
+        this.index = x;
+    }
 
 }
