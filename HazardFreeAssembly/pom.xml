@@ -58,8 +58,8 @@
            
                
                
-            <!-- START Comment here if you want to run it on Netbeans -->
-            <plugin>
+           <!-- START Comment here if you want to run it on Netbeans -->
+             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>1.6.0</version>
@@ -77,7 +77,7 @@
                     </arguments>
                 </configuration>
             </plugin>
-            <!-- END Comment here if you want to run it on Netbeans -->
+            <!-- END Comment here if you want to run it on Netbeans --> 
         </plugins>
     </build>
 </project>
