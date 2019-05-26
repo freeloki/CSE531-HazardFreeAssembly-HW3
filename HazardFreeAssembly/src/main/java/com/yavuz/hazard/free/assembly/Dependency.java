@@ -11,12 +11,12 @@ package com.yavuz.hazard.free.assembly;
  */
 public class Dependency {
     
-    private Node first;
-    private Node second;
+    private NodeIns first;
+    private NodeIns second;
     private int distance;
     private Hazard hazard;
 
-    public Dependency(Node first, Node second, int distance, Hazard hazard) {
+    public Dependency(NodeIns first, NodeIns second, int distance, Hazard hazard) {
         this.first = first;
         this.second = second;
         this.distance = distance;
@@ -26,28 +26,28 @@ public class Dependency {
     /**
      * @return the first
      */
-    public Node getFirst() {
+    public NodeIns getFirst() {
         return first;
     }
 
     /**
      * @param first the first to set
      */
-    public void setFirst(Node first) {
+    public void setFirst(NodeIns first) {
         this.first = first;
     }
 
     /**
      * @return the second
      */
-    public Node getSecond() {
+    public NodeIns getSecond() {
         return second;
     }
 
     /**
      * @param second the second to set
      */
-    public void setSecond(Node second) {
+    public void setSecond(NodeIns second) {
         this.second = second;
     }
 

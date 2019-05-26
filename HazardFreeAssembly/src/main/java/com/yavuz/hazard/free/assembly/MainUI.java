@@ -10,9 +10,38 @@ import static com.yavuz.hazard.free.assembly.Hazard.DH;
 import static com.yavuz.hazard.free.assembly.InstructionSyntax.ArithLog;
 import static com.yavuz.hazard.free.assembly.InstructionSyntax.ArithLogI;
 import static com.yavuz.hazard.free.assembly.InstructionSyntax.Branch;
+import static com.yavuz.hazard.free.assembly.InstructionSyntax.BranchZ;
+import static com.yavuz.hazard.free.assembly.InstructionSyntax.Jump;
+import static com.yavuz.hazard.free.assembly.InstructionSyntax.JumpR;
 import static com.yavuz.hazard.free.assembly.InstructionSyntax.LoadStore;
 import static com.yavuz.hazard.free.assembly.InstructionType.NOP;
+import guru.nidi.graphviz.attribute.Color;
+import guru.nidi.graphviz.attribute.Label;
+import static guru.nidi.graphviz.attribute.Label.Justification.LEFT;
+import guru.nidi.graphviz.attribute.LinkAttr;
+import guru.nidi.graphviz.attribute.Shape;
+import guru.nidi.graphviz.attribute.Style;
+import guru.nidi.graphviz.engine.Format;
+import guru.nidi.graphviz.engine.Graphviz;
+import static guru.nidi.graphviz.model.Factory.graph;
+import static guru.nidi.graphviz.model.Factory.node;
+import static guru.nidi.graphviz.model.Factory.to;
+import guru.nidi.graphviz.model.Graph;
+import guru.nidi.graphviz.model.MutableGraph;
+import guru.nidi.graphviz.model.Node;
+import guru.nidi.graphviz.parse.Parser;
+import java.awt.Dimension;
+import java.awt.Toolkit;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.swing.ImageIcon;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
 
 /**
  *
@@ -22,7 +51,7 @@ public class MainUI extends javax.swing.JFrame {
 
     private String inputString;
     private ArrayList<String> mAssemblyLines = new ArrayList();
-    private static ArrayList<Node> mNodeList = new ArrayList();
+    private static ArrayList<NodeIns> mNodeList = new ArrayList();
 
     private static ArrayList<Dependency> mDependencylist = new ArrayList<>();
 
@@ -59,6 +88,7 @@ public class MainUI extends javax.swing.JFrame {
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("CSE531 - Hazard Free Assembly");
+        setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
         setLocation(new java.awt.Point(200, 100));
 
         mOutputText.setColumns(20);
@@ -75,7 +105,7 @@ public class MainUI extends javax.swing.JFrame {
             }
         });
 
-        runBtn.setText("Find Dependency");
+        runBtn.setText("Find Dependencies");
         runBtn.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 runBtnActionPerformed(evt);
@@ -114,10 +144,10 @@ public class MainUI extends javax.swing.JFrame {
                         .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 476, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(12, 12, 12)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(mClearBtn, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addComponent(ParseInput, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addComponent(runBtn, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(solveBtn, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(mClearBtn, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                            .addComponent(solveBtn, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
                     .addComponent(jLabel1))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -134,17 +164,17 @@ public class MainUI extends javax.swing.JFrame {
                     .addComponent(outputLabel))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addGroup(layout.createSequentialGroup()
-                        .addComponent(ParseInput)
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                        .addComponent(ParseInput, javax.swing.GroupLayout.PREFERRED_SIZE, 89, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(runBtn)
+                        .addComponent(runBtn, javax.swing.GroupLayout.PREFERRED_SIZE, 78, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(solveBtn, javax.swing.GroupLayout.PREFERRED_SIZE, 74, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(solveBtn)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(mClearBtn))
-                    .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 400, Short.MAX_VALUE)
+                        .addComponent(mClearBtn, javax.swing.GroupLayout.PREFERRED_SIZE, 77, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(jScrollPane2)
                     .addComponent(jScrollPane1))
-                .addContainerGap(108, Short.MAX_VALUE))
+                .addContainerGap(172, Short.MAX_VALUE))
         );
 
         pack();
@@ -153,6 +183,7 @@ public class MainUI extends javax.swing.JFrame {
     private void ParseInputActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ParseInputActionPerformed
         // TODO add your handling code here:
 
+        StringBuilder parseResult = new StringBuilder("Parse Result:\n");
         if (mAssemblyInputText != null && !mAssemblyInputText.getText().isEmpty()) {
 
             inputString = mAssemblyInputText.getText();
@@ -162,7 +193,11 @@ public class MainUI extends javax.swing.JFrame {
             for (int i = 0; i < mSplitArray.length; i++) {
 
                 mAssemblyLines.add(reduceBlanksToOne(mSplitArray[i]));
-                System.out.println("LINE[" + i + "]: " + reduceBlanksToOne(mSplitArray[i]));
+               
+                
+                String temp = "LINE[" + i + "]: " + reduceBlanksToOne(mSplitArray[i]+"\n");
+                System.out.println(temp);
+                parseResult.append(temp).append("\n");
             }
 
             // parse lines.
@@ -188,7 +223,7 @@ public class MainUI extends javax.swing.JFrame {
                                 String rs = lineArray[3].replaceAll(",", "");
                                 String rt = lineArray[4].replaceAll(",", "");
                                 Instruction ins = new Instruction(type, rd, rs, rt);
-                                mNodeList.add(new Node(label, ins, index));
+                                mNodeList.add(new NodeIns(label, ins, index));
                                 break;
                             }
                             case ArithLogI: {
@@ -196,7 +231,7 @@ public class MainUI extends javax.swing.JFrame {
                                 String rt = lineArray[2].replaceAll(",", "");
                                 String rs = lineArray[3].replaceAll(",", "");
                                 Instruction ins = new Instruction(type, null, rs, rt);
-                                mNodeList.add(new Node(label, ins, index));
+                                mNodeList.add(new NodeIns(label, ins, index));
                                 break;
                             }
                             case LoadStore: {
@@ -206,7 +241,7 @@ public class MainUI extends javax.swing.JFrame {
                                 rs = rs.substring(rs.indexOf("("));
                                 rs = rs.replaceAll("[)]", "");
                                 Instruction ins = new Instruction(type, null, rs, rt);
-                                mNodeList.add(new Node(label, ins, index));
+                                mNodeList.add(new NodeIns(label, ins, index));
                                 break;
                             }
                             case Branch: {
@@ -214,8 +249,69 @@ public class MainUI extends javax.swing.JFrame {
                                 String rs = lineArray[2].replaceAll(",", "");
                                 String rt = lineArray[3].replaceAll(",", "");
                                 Instruction ins = new Instruction(type, null, rs, rt);
-                                mNodeList.add(new Node(label, ins, index));
+                                mNodeList.add(new NodeIns(label, ins, index));
                                 break;
+                            }
+                             case DivMult: {
+                                String rs = lineArray[2].replaceAll(",", "");
+                                String rt = lineArray[3];
+                                Instruction ins = new Instruction(type, null, rs, rt);
+                                mNodeList.add(new NodeIns(label, ins, index));
+                            }
+                            
+                            case Shift: {
+                                String rd = lineArray[2].replaceAll(",", "");
+                                String rt = lineArray[3];
+                                Instruction ins = new Instruction(type, rd, null, rt);
+                                mNodeList.add(new NodeIns(label, ins, index));
+                            }
+                            
+                            case ShiftV: {
+                                String rd = lineArray[2].replaceAll(",", "");
+                                String rt = lineArray[3].replaceAll(",", "");
+                                String rs = lineArray[4];
+                                Instruction ins = new Instruction(type, rd, rs, rt);
+                                mNodeList.add(new NodeIns(label, ins, index));
+                            }
+                            
+                            case JumpR: {
+                                String rs = lineArray[2];
+                                Instruction ins = new Instruction(type, null, rs, null);
+                                mNodeList.add(new NodeIns(label, ins, index));
+                            }
+                            
+                            case MoveFrom: {
+                                String rd = lineArray[2];
+                                Instruction ins = new Instruction(type, rd, null, null);
+                                mNodeList.add(new NodeIns(label, ins, index));
+                            }
+                            
+                            case MoveTo: {
+                                String rs = lineArray[2];
+                                Instruction ins = new Instruction(type, null, rs, null);
+                                mNodeList.add(new NodeIns(label, ins, index));
+                            }
+                            
+                            case LoadI: {
+                                String rt = lineArray[2].replaceAll(",", "");
+                                Instruction ins = new Instruction(type, null, null, rt);
+                                mNodeList.add(new NodeIns(label, ins, index));
+                            }
+                            
+                            case BranchZ: {
+                                String rs = lineArray[2].replaceAll(",", "");
+                                Instruction ins = new Instruction(type, null, rs, null);
+                                mNodeList.add(new NodeIns(label, ins, index));
+                            }
+                            
+                            case Jump: {
+                                Instruction ins = new Instruction(type, null, null, null);
+                                mNodeList.add(new NodeIns(label, ins, index));
+                            }
+                            
+                            case Trap: {
+                                Instruction ins = new Instruction(type, null, null, null);
+                                mNodeList.add(new NodeIns(label, ins, index));
                             }
                             default:
                                 break;
@@ -231,7 +327,7 @@ public class MainUI extends javax.swing.JFrame {
                                 String rs = lineArray[2].replaceAll(",", "");
                                 String rt = lineArray[3].replaceAll(",", "");
                                 Instruction ins = new Instruction(type, rd, rs, rt);
-                                mNodeList.add(new Node(label, ins, index));
+                                mNodeList.add(new NodeIns(label, ins, index));
                                 break;
                             }
                             case ArithLogI: {
@@ -239,7 +335,7 @@ public class MainUI extends javax.swing.JFrame {
                                 String rt = lineArray[1].replaceAll(",", "");
                                 String rs = lineArray[2].replaceAll(",", "");
                                 Instruction ins = new Instruction(type, null, rs, rt);
-                                mNodeList.add(new Node(label, ins, index));
+                                mNodeList.add(new NodeIns(label, ins, index));
                                 break;
                             }
                             case LoadStore: {
@@ -250,7 +346,7 @@ public class MainUI extends javax.swing.JFrame {
                                 rs = rs.replaceAll("[)]", "");
                                 rs = rs.replaceAll("[(]", "");
                                 Instruction ins = new Instruction(type, null, rs, rt);
-                                mNodeList.add(new Node(label, ins, index));
+                                mNodeList.add(new NodeIns(label, ins, index));
                                 break;
                             }
                             case Branch: {
@@ -258,8 +354,70 @@ public class MainUI extends javax.swing.JFrame {
                                 String rs = lineArray[1].replaceAll(",", "");
                                 String rt = lineArray[2].replaceAll(",", "");
                                 Instruction ins = new Instruction(type, null, rs, rt);
-                                mNodeList.add(new Node(label, ins, index));
+                                mNodeList.add(new NodeIns(label, ins, index));
                                 break;
+                            }
+                            // copy then
+                            case DivMult: {
+                                String rs = lineArray[1].replaceAll(",", "");
+                                String rt = lineArray[2];
+                                Instruction ins = new Instruction(type, null, rs, rt);
+                                mNodeList.add(new NodeIns(label, ins, index));
+                            }
+                            
+                            case Shift: {
+                                String rd = lineArray[1].replaceAll(",", "");
+                                String rt = lineArray[2];
+                                Instruction ins = new Instruction(type, rd, null, rt);
+                                mNodeList.add(new NodeIns(label, ins, index));
+                            }
+                            
+                            case ShiftV: {
+                                String rd = lineArray[1].replaceAll(",", "");
+                                String rt = lineArray[2].replaceAll(",", "");
+                                String rs = lineArray[3];
+                                Instruction ins = new Instruction(type, rd, rs, rt);
+                                mNodeList.add(new NodeIns(label, ins, index));
+                            }
+                            
+                            case JumpR: {
+                                String rs = lineArray[1];
+                                Instruction ins = new Instruction(type, null, rs, null);
+                                mNodeList.add(new NodeIns(label, ins, index));
+                            }
+                            
+                            case MoveFrom: {
+                                String rd = lineArray[1];
+                                Instruction ins = new Instruction(type, rd, null, null);
+                                mNodeList.add(new NodeIns(label, ins, index));
+                            }
+                            
+                            case MoveTo: {
+                                String rs = lineArray[1];
+                                Instruction ins = new Instruction(type, null, rs, null);
+                                mNodeList.add(new NodeIns(label, ins, index));
+                            }
+                            
+                            case LoadI: {
+                                String rt = lineArray[1].replaceAll(",", "");
+                                Instruction ins = new Instruction(type, null, null, rt);
+                                mNodeList.add(new NodeIns(label, ins, index));
+                            }
+                            
+                            case BranchZ: {
+                                String rs = lineArray[1].replaceAll(",", "");
+                                Instruction ins = new Instruction(type, null, rs, null);
+                                mNodeList.add(new NodeIns(label, ins, index));
+                            }
+                            
+                            case Jump: {
+                                Instruction ins = new Instruction(type, null, null, null);
+                                mNodeList.add(new NodeIns(label, ins, index));
+                            }
+                            
+                            case Trap: {
+                                Instruction ins = new Instruction(type, null, null, null);
+                                mNodeList.add(new NodeIns(label, ins, index));
                             }
                             default:
                                 break;
@@ -274,6 +432,8 @@ public class MainUI extends javax.swing.JFrame {
             /* for (Node n : mNodeList) {
                 System.out.println(n.toString());
             }*/
+            
+            mOutputText.setText(parseResult.toString());
         }
 
     }//GEN-LAST:event_ParseInputActionPerformed
@@ -286,13 +446,13 @@ public class MainUI extends javax.swing.JFrame {
         outputString = "";
         mOutputText.setText("");
         mAssemblyLines.clear();
+        mNodeList.clear();
+        mDependencylist.clear();
     }//GEN-LAST:event_mClearBtnActionPerformed
 
     private void runBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_runBtnActionPerformed
-        // TODO add your handling code here:
-
-        //int count = findDependencies();
-        // System.out.println("Dependency SIZE: " + mDependencylist.size() + "\nFIX: " + count);
+        
+        printDepGraph();
     }//GEN-LAST:event_runBtnActionPerformed
 
     private void solveBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_solveBtnActionPerformed
@@ -301,14 +461,20 @@ public class MainUI extends javax.swing.JFrame {
         while (findDependencies() > 0) {
             solveDependencies();
         }
-        for (Node n : mNodeList) {
+        
+        StringBuilder result = new StringBuilder("RESULT:\n");
+        for (NodeIns n : mNodeList) {
             System.out.println(n.getInstruction().getName());
+            String temp = n.getIndex() + " - " + n.getInstruction().getName() + "\n";
+            result.append(temp);
         }
 
+        mOutputText.setText(result.toString());
         /*for (int i = 0; i < 4; i++) {
             findDependencies();
             solveDependencies();
         }*/
+         showImage();
     }//GEN-LAST:event_solveBtnActionPerformed
 
     /**
@@ -393,33 +559,33 @@ public class MainUI extends javax.swing.JFrame {
                         target = dep;
                         int fix_index = target.getFirst().getIndex();
 
-                        ArrayList<Node> mNewNodeList = new ArrayList();
+                        ArrayList<NodeIns> mNewNodeList = new ArrayList();
 
                         for (int i = 0; i <= fix_index; i++) {
-                            Node temp = mNodeList.get(i);
+                            NodeIns temp = mNodeList.get(i);
                             temp.setIndex(i);
                             mNewNodeList.add(temp);
                         }
 
-                        mNewNodeList.add(new Node(null, new Instruction(InstructionType.NOP, "", "", ""), fix_index + 1));
-                        mNewNodeList.add(new Node(null, new Instruction(InstructionType.NOP, "", "", ""), fix_index + 2));
-                        mNewNodeList.add(new Node(null, new Instruction(InstructionType.NOP, "", "", ""), fix_index + 3));
+                        mNewNodeList.add(new NodeIns(null, new Instruction(InstructionType.NOP, "", "", ""), fix_index + 1));
+                        mNewNodeList.add(new NodeIns(null, new Instruction(InstructionType.NOP, "", "", ""), fix_index + 2));
+                        mNewNodeList.add(new NodeIns(null, new Instruction(InstructionType.NOP, "", "", ""), fix_index + 3));
 
                         for (int i = fix_index + 1; i < mNodeList.size(); i++) {
                             // System.out.println("ADDING NEW LIST [" + i + "] : " + mNodeList.get(i).getInstruction().getName());
-                            Node temp = mNodeList.get(i);
+                            NodeIns temp = mNodeList.get(i);
                             temp.setIndex(i + 3);
                             mNewNodeList.add(temp);
                         }
 
-                        for (Node n : mNewNodeList) {
+                        for (NodeIns n : mNewNodeList) {
                             System.out.println(n.getInstruction().getName());
                             System.out.println(n.getIndex());
                         }
 
                         mNodeList = mNewNodeList;
 
-                        for (Node n : mNodeList) {
+                        for (NodeIns n : mNodeList) {
                             //System.out.println(n.toString());
                         }
                         System.out.println(mNodeList.size());
@@ -439,25 +605,25 @@ public class MainUI extends javax.swing.JFrame {
                         int fix_index = target.getFirst().getIndex();
                         System.out.println("FIXING DATA HAZARD_1!!!!" + fix_index + " -> " + (fix_index + 1));
 
-                        ArrayList<Node> mNewNodeList = new ArrayList();
+                        ArrayList<NodeIns> mNewNodeList = new ArrayList();
 
                         for (int i = 0; i <= fix_index; i++) {
-                            Node temp = mNodeList.get(i);
+                            NodeIns temp = mNodeList.get(i);
                             temp.setIndex(i);
                             mNewNodeList.add(temp);
                         }
 
-                        mNewNodeList.add(new Node(null, new Instruction(InstructionType.NOP, "", "", ""), fix_index + 1));
-                        mNewNodeList.add(new Node(null, new Instruction(InstructionType.NOP, "", "", ""), fix_index + 2));
+                        mNewNodeList.add(new NodeIns(null, new Instruction(InstructionType.NOP, "", "", ""), fix_index + 1));
+                        mNewNodeList.add(new NodeIns(null, new Instruction(InstructionType.NOP, "", "", ""), fix_index + 2));
 
                         for (int i = fix_index + 1; i < mNodeList.size(); i++) {
                             // System.out.println("ADDING NEW LIST [" + i + "] : " + mNodeList.get(i).getInstruction().getName());
-                            Node temp = mNodeList.get(i);
+                            NodeIns temp = mNodeList.get(i);
                             temp.setIndex(i + 2);
                             mNewNodeList.add(temp);
                         }
 
-                        for (Node n : mNewNodeList) {
+                        for (NodeIns n : mNewNodeList) {
                             System.out.println(n.getInstruction().getName());
                             System.out.println(n.getIndex());
                         }
@@ -479,19 +645,19 @@ public class MainUI extends javax.swing.JFrame {
                         target = dep;
                         int fix_index = target.getFirst().getIndex();
                         System.out.println("FIXING DATA HAZARD_2!!!!" + fix_index + " -> " + (fix_index + 1));
-                        ArrayList<Node> mNewNodeList = new ArrayList();
+                        ArrayList<NodeIns> mNewNodeList = new ArrayList();
 
                         for (int i = 0; i <= fix_index; i++) {
-                            Node temp = mNodeList.get(i);
+                            NodeIns temp = mNodeList.get(i);
                             temp.setIndex(i);
                             mNewNodeList.add(temp);
                         }
 
-                        mNewNodeList.add(new Node(null, new Instruction(InstructionType.NOP, "", "", ""), fix_index + 1));
+                        mNewNodeList.add(new NodeIns(null, new Instruction(InstructionType.NOP, "", "", ""), fix_index + 1));
 
                         for (int i = fix_index + 1; i < mNodeList.size(); i++) {
                             // System.out.println("ADDING NEW LIST [" + i + "] : " + mNodeList.get(i).getInstruction().getName());
-                            Node temp = mNodeList.get(i);
+                            NodeIns temp = mNodeList.get(i);
                             temp.setIndex(i + 1);
                             mNewNodeList.add(temp);
                         }
@@ -509,7 +675,7 @@ public class MainUI extends javax.swing.JFrame {
 
         }
 
-        for (Node n : mNodeList) {
+        for (NodeIns n : mNodeList) {
             System.out.println(n.getInstruction().getName());
         }
     }
@@ -524,18 +690,21 @@ public class MainUI extends javax.swing.JFrame {
             int temp = 0;
             while (temp < size) {
 
-                Node current = mNodeList.get(temp);
+                NodeIns current = mNodeList.get(temp);
 
                 for (int i = temp + 1; i < mNodeList.size(); i++) {
 
                     if (i < size) {
-                        Node target = mNodeList.get(i);
+                        NodeIns target = mNodeList.get(i);
                         //System.out.println("Checking...\n  " + current.getInstruction().getName() + "  AND  " +  target.getInstruction().getName());
                         if (target.target(current.current())) {
                             //
                             // branch or 
                             int distance = target.getIndex() - current.getIndex();
-                            if (!current.getInstruction().getType().getSyntax().equals(Branch) && distance < 3) {
+                            if ((!current.getInstruction().getType().getSyntax().equals(Branch)
+                                    || !current.getInstruction().getType().getSyntax().equals(BranchZ)
+                                    ||!current.getInstruction().getType().getSyntax().equals(Jump)
+                                    || !current.getInstruction().getType().getSyntax().equals(JumpR)) && distance < 3) {
                                 Dependency dep = new Dependency(current, target, distance, Hazard.DH);
                                 System.out.println(current.getIndex() + "-> " + target.getIndex() + " ADDING DH: " + distance);
                                 System.out.println(current.getInstruction().getName() + "-> " + target.getInstruction().getName() + " ADDING DH: " + distance);
@@ -551,9 +720,16 @@ public class MainUI extends javax.swing.JFrame {
 
                 //TODO: Check last branch instruction.  //  System.out.println("SSSSSSSSSSss: " + current.getInstruction().getType().getSyntax().name());
                 // System.out.println("ADDING CH !!!!!!!!!" + temp + "name:" + current.getInstruction().getName());
-                if (!(temp == (mNodeList.size() - 1)) && current.getInstruction().getType().getSyntax().name().equals(Branch.name())) {
+                if (!(temp == (mNodeList.size() - 1)) && (current.getInstruction().getType().getSyntax().name().equals(Branch.name())
+                        || current.getInstruction().getType().getSyntax().name().equals(BranchZ.name())
+                        || current.getInstruction().getType().getSyntax().name().equals(Jump.name())
+                        || current.getInstruction().getType().getSyntax().name().equals(JumpR.name())
+                        )) {
                     System.out.println("CURRENT: " + current.getInstruction().getType().getName() + "AFTER: " + mNodeList.get((mNodeList.indexOf(current) + 1)).getInstruction().getType().getName());
-                    if (current.getInstruction().getType().getSyntax().equals(Branch) && !(mNodeList.get((mNodeList.indexOf(current) + 1)).getInstruction().getType().equals(NOP))) {
+                    if ((current.getInstruction().getType().getSyntax().equals(Branch)
+                            ||current.getInstruction().getType().getSyntax().equals(BranchZ)
+                            ||current.getInstruction().getType().getSyntax().equals(Jump)
+                            ||current.getInstruction().getType().getSyntax().equals(JumpR)) && !(mNodeList.get((mNodeList.indexOf(current) + 1)).getInstruction().getType().equals(NOP))) {
                         Dependency dep = new Dependency(current, mNodeList.get(mNodeList.indexOf(current) + 1), 1, Hazard.CH);
                         System.out.println(current.getIndex() + " -> " + (current.getIndex() + 1) + " ADDING CH !!!!!!!!!");
                         mDependencylist.add(dep);
@@ -573,6 +749,143 @@ public class MainUI extends javax.swing.JFrame {
         }
         System.out.println("DEP COUNT: " + depCount);
         return depCount;
+    }
+    
+    
+    private void printDepGraph() {
+        
+            // TODO add your handling code here:
+            
+            int count = findDependencies();
+            System.out.println("Dependency SIZE: " + mDependencylist.size() + "\nFIX: " + count);
+            
+            
+            ArrayList<Node> mGraphNodes = new ArrayList<>();
+            for(NodeIns nodeins:mNodeList) {
+                
+                mGraphNodes.add(node(String.valueOf(nodeins.getIndex())));
+            }
+            
+           for(NodeIns n: mNodeList) {
+               System.out.println("GRAPH:  " + getGraphNodeById(mGraphNodes, String.valueOf(n.getIndex())).name().toString());
+           }
+          
+           StringBuilder digraphStrBuilder = new StringBuilder();
+           
+           digraphStrBuilder.append("digraph {\n");
+             //MutableGraph g = 
+            
+            for(Dependency d : mDependencylist) {
+                
+                NodeIns cur = d.getFirst();
+                NodeIns tar = d.getSecond();
+                String label = String.valueOf(d.getDistance());
+                
+                String curIndex = String.valueOf(cur.getIndex());
+                String tarIndex = String.valueOf(tar.getIndex());
+               // Node current = getGraphNodeById(mGraphNodes, String.valueOf(cur.getIndex()));
+               // Node target = getGraphNodeById(mGraphNodes, String.valueOf(tar.getIndex()));
+                
+               String depLine="";
+                //a -> b[label="0.2",weight="0.2"];
+                switch (d.getHazard()) {
+                    case CH:
+                        depLine = curIndex + " -> " + tarIndex + "[label=\"CH("+label+")\",weight=\"CH("+label+")\",color=red,penwidth=3.0]\n";
+                        break;
+                    case DH:
+                        depLine = curIndex + " -> " + tarIndex + "[label=\"DH("+label+")\",weight=\"DH("+label+")\"color=blue,penwidth=3.0]\n";
+                        break;
+                    default:
+                        depLine = curIndex + " -> " + tarIndex + "[label=\""+label+"\",weight=\""+label+"\"color=black,penwidth=3.0]\n";
+                        break;
+                }
+                digraphStrBuilder.append(depLine);
+               
+            }
+            
+            digraphStrBuilder.append("}");
+            
+            String drawer = digraphStrBuilder.toString();
+            
+            
+        try {
+            MutableGraph g  = Parser.read(drawer);
+            Graphviz.fromGraph(g).width(500).render(Format.PNG).toFile(new File("example/awesome.png"));
+        } catch (IOException ex) {
+            Logger.getLogger(MainUI.class.getName()).log(Level.SEVERE, null, ex);
+        }
+            
+             System.out.println("DRAWER:\n" + drawer);
+             mOutputText.setText(drawer.toString());
+
+       
+    }
+    
+    private Node getGraphNodeById(ArrayList<Node> mGraphNodes, String id) {
+        for(Node n : mGraphNodes) {
+            if(n.name().toString().equals(id)) {
+                return n;
+            }
+        }
+        return null;
+    }
+    
+    private void showImage(){
+           JFrame f = new JFrame(); //creates jframe f
+           
+
+        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize(); //this is your screen size
+
+        f.setUndecorated(true); //removes the surrounding border
+
+        ImageIcon image = new ImageIcon("example/awesome.png"); //imports the image
+
+        JLabel lbl = new JLabel(image); //puts the image into a jlabel
+        
+
+        f.getContentPane().add(lbl); //puts label inside the jframe
+
+        f.setSize(image.getIconWidth(), image.getIconHeight()); //gets h and w of image and sets jframe to the size
+
+        int x = (screenSize.width - f.getSize().width)/2; //These two lines are the dimensions
+        int y = (screenSize.height - f.getSize().height)/2;//of the center of the screen
+
+        f.setLocation(x, y); //sets the location of the jframe
+        f.setResizable(true);
+       f.setTitle("Dependency Graph");
+       f.setType(Type.NORMAL);
+       
+       f.addMouseListener(new MouseListener() {
+               @Override
+               public void mouseClicked(MouseEvent e) {
+                  // throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+                  f.setVisible(false);
+               }
+
+               @Override
+               public void mousePressed(MouseEvent e) {
+                  // throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+               }
+
+               @Override
+               public void mouseReleased(MouseEvent e) {
+                  // throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+               }
+
+               @Override
+               public void mouseEntered(MouseEvent e) {
+                   //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+               }
+
+               @Override
+               public void mouseExited(MouseEvent e) {
+                 //  throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+               }
+       });
+       
+       //f.setEnabled(true);
+        
+        f.setVisible(true); //makes the jframe visible
     }
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton ParseInput;
