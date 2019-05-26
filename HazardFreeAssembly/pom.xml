@@ -55,28 +55,29 @@
                 </configuration>
             </plugin>
             
-           <plugin>
+           
                
                
-               <!-- START Comment here if you want to run it on Netbeans -->
-    <groupId>org.codehaus.mojo</groupId>
-    <artifactId>exec-maven-plugin</artifactId>
-    <version>1.6.0</version>
-    <executions>
-      <execution>
-        <goals>
-          <goal>java</goal>
-        </goals>
-      </execution>
-    </executions>
-    <configuration>
-      <mainClass>com.yavuz.hazard.free.assembly.MainUI</mainClass>
-      <arguments>
-        <argument>AddTrial</argument>
-      </arguments>
-    </configuration>
-  </plugin>
-   <!-- END Comment here if you want to run it on Netbeans -->
+            <!-- START Comment here if you want to run it on Netbeans -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>1.6.0</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <mainClass>com.yavuz.hazard.free.assembly.MainUI</mainClass>
+                    <arguments>
+                        <argument>AddTrial</argument>
+                    </arguments>
+                </configuration>
+            </plugin>
+            <!-- END Comment here if you want to run it on Netbeans -->
         </plugins>
     </build>
 </project>
